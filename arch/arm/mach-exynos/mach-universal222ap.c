@@ -714,7 +714,12 @@ static void __init universal222ap_machine_init(void)
 	register_reboot_notifier(&exynos4_reboot_notifier);
 }
 
-MACHINE_START(UNIVERSAL3470, "UNIVERSAL3470")
+#ifdef CONFIG_MACH_GARDA
+#define UNIVERSAL222AP_MACH_NAME "UNIVERSAL_GARDA"
+#else
+#define UNIVERSAL222AP_MACH_NAME "UNIVERSAL3470"
+#endif
+MACHINE_START(UNIVERSAL3470, UNIVERSAL222AP_MACH_NAME)
 	.atag_offset	= 0x100,
 	.init_early	= smdk3470_init_early,
 	.init_irq	= exynos5_init_irq,

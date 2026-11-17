@@ -67,3 +67,16 @@
 /* Get raw magnetic vector flag */
 #define ECS_IOCTL_APP_GET_MVFLAG	_IOR(AKMIO, 0x1A, short)
 #endif
+
+/* T399: struct recovered from its users (board-garda-sensor.c and
+ * drivers/sensors/ak8963.c); it was missing from this tree. */
+#ifdef __KERNEL__
+#include <linux/types.h>
+#include <linux/sensor/sensors_axes.h>
+struct akm8963_platform_data {
+int gpio_data_ready_int;
+int gpio_reset;
+u8 (*mag_get_position)(void);
+axes_func_s16 (*select_func)(u8 position);
+};
+#endif

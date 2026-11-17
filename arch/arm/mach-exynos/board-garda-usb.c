@@ -43,7 +43,7 @@ static struct platform_device *smdk4270_usb_devices[] __initdata = {
 
 void __init exynos4_smdk4270_usb_init(void)
 {
-#if !defined(CONFIG_EXYNOS_USB_SWITCH)
+#if 0 /* T399: EXYNOS4_GPL2 does not exist on Exynos3470 */
 #if defined(CONFIG_USB_EHCI_S5P) || defined(CONFIG_USB_OHCI_EXYNOS)
 	if (gpio_request_one(EXYNOS4_GPL2(0), GPIOF_OUT_INIT_HIGH,
 		"UHOST_VBUSCTRL") < 0)
