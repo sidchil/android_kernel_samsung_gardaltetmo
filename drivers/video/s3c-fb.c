@@ -2409,6 +2409,33 @@ static ssize_t s3c_fb_write(struct fb_info *info, char const __user *buf,
 	return 0;
 }
 
+/* T399_FB_OLD: userspace ABI of the stock 4.2.2 hwcomposer (no plane_alpha). */
+struct s3c_fb_win_config_old {
+	int state;
+	union {
+		__u32 color;
+		struct {
+			int fd;
+			__u32 offset;
+			__u32 stride;
+			int format;
+			int blending;
+			int fence_fd;
+		};
+	};
+	int x;
+	int y;
+	__u32 w;
+	__u32 h;
+};
+
+struct s3c_fb_win_config_data_old {
+	int fence;
+	struct s3c_fb_win_config_old config[S3C_FB_MAX_WIN];
+};
+
+#define S3CFB_WIN_CONFIG_OLD _IOW('F', 209, struct s3c_fb_win_config_data_old)
+
 static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			unsigned long arg)
 {
@@ -2439,7 +2466,8 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 	} p;
 
 	if ((sfb->power_state == POWER_DOWN) &&
-		(cmd != S3CFB_WIN_CONFIG))
+		(cmd != S3CFB_WIN_CONFIG) &&
+		(cmd != S3CFB_WIN_CONFIG_OLD))
 		return 0;
 
 	switch (cmd) {
@@ -2524,6 +2552,52 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		}
 
 		break;
+
+	case S3CFB_WIN_CONFIG_OLD:
+	{
+		struct s3c_fb_win_config_data_old old;
+		int i;
+
+		if (copy_from_user(&old,
+				   (struct s3c_fb_win_config_data_old __user *)arg,
+				   sizeof(old))) {
+			ret = -EFAULT;
+			break;
+		}
+
+		memset(&p.win_data, 0, sizeof(p.win_data));
+		p.win_data.fence = old.fence;
+		for (i = 0; i < S3C_FB_MAX_WIN; i++) {
+			struct s3c_fb_win_config_old *o = &old.config[i];
+			struct s3c_fb_win_config *n = &p.win_data.config[i];
+
+			n->state = o->state;
+			if (o->state == S3C_FB_WIN_STATE_COLOR) {
+				n->color = o->color;
+			} else if (o->state == S3C_FB_WIN_STATE_BUFFER) {
+				n->fd = o->fd;
+				n->offset = o->offset;
+				n->stride = o->stride;
+				n->format = o->format;
+				n->blending = o->blending;
+				n->fence_fd = o->fence_fd;
+				n->plane_alpha = 0;
+			}
+			n->x = o->x;
+			n->y = o->y;
+			n->w = o->w;
+			n->h = o->h;
+		}
+
+		ret = s3c_fb_set_win_config(sfb, &p.win_data);
+		if (ret)
+			break;
+
+		if (copy_to_user((int __user *)arg, &p.win_data.fence,
+				 sizeof(int)))
+			ret = -EFAULT;
+		break;
+	}
 
 	case S3CFB_GET_ION_USER_HANDLE:
 		if (copy_from_user(&p.user_ion_client,

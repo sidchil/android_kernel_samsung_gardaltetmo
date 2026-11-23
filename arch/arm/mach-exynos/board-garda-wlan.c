@@ -21,6 +21,13 @@
 
 #include "board-garda-wlan.h"
 
+#if !defined(CONFIG_BROADCOM_WIFI_RESERVED_MEM) && defined(CONFIG_ARM_EXYNOS3470_BUS_DEVFREQ)
+static struct dw_mci_mon_table exynos_dwmci_tp_mon1_tbl[] = {
+    {  9000000, 400000, 1300000},
+    {         0,      0,       0},
+};
+#endif
+
 #ifdef CONFIG_BROADCOM_WIFI_RESERVED_MEM
 
 #define WLAN_STATIC_SCAN_BUF0		5
