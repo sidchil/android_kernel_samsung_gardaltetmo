@@ -73,10 +73,12 @@
 #ifdef __KERNEL__
 #include <linux/types.h>
 #include <linux/sensor/sensors_axes.h>
+#ifndef CONFIG_SENSORS_AK8963C /* else defined by sensors_core.h */
 struct akm8963_platform_data {
 int gpio_data_ready_int;
 int gpio_reset;
 u8 (*mag_get_position)(void);
 axes_func_s16 (*select_func)(u8 position);
 };
+#endif
 #endif
