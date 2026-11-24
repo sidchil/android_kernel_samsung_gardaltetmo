@@ -2986,12 +2986,11 @@ EXPORT_SYMBOL_GPL(ip_route_output_flow);
 
 static int rt_fill_info(struct net *net,
 			struct sk_buff *skb, u32 pid, u32 seq, int event,
-			int nowait, unsigned int flags)
+			int nowait, unsigned int flags, kuid_t uid)
 {
 	struct rtable *rt = skb_rtable(skb);
 	struct rtmsg *r;
 	struct nlmsghdr *nlh;
-	struct flowi4 *fl4 = &(inet_sk(skb->sk))->cork.fl.u.ip4;
 	unsigned long expires = 0;
 	const struct inet_peer *peer = rt->peer;
 	u32 id = 0, ts = 0, tsage = 0, error;
@@ -3040,9 +3039,9 @@ static int rt_fill_info(struct net *net,
 	if (rt->rt_mark)
 		NLA_PUT_BE32(skb, RTA_MARK, rt->rt_mark);
 
-	if (!uid_eq(fl4->flowi4_uid, INVALID_UID) &&
+	if (!uid_eq(uid, INVALID_UID) &&
 	    nla_put_u32(skb, RTA_UID,
-			from_kuid_munged(current_user_ns(), fl4->flowi4_uid)))
+			from_kuid_munged(current_user_ns(), uid)))
 		goto nla_put_failure;
 
 	error = rt->dst.error;
@@ -3185,7 +3184,7 @@ static int inet_rtm_getroute(struct sk_buff *in_skb, struct nlmsghdr* nlh, void 
 		rt->rt_flags |= RTCF_NOTIFY;
 
 	err = rt_fill_info(net, skb, NETLINK_CB(in_skb).pid, nlh->nlmsg_seq,
-			   RTM_NEWROUTE, 0, 0);
+			   RTM_NEWROUTE, 0, 0, uid);
 	if (err <= 0)
 		goto errout_free;
 
@@ -3224,7 +3223,7 @@ int ip_rt_dump(struct sk_buff *skb,  struct netlink_callback *cb)
 			skb_dst_set_noref(skb, &rt->dst);
 			if (rt_fill_info(net, skb, NETLINK_CB(cb->skb).pid,
 					 cb->nlh->nlmsg_seq, RTM_NEWROUTE,
-					 1, NLM_F_MULTI) <= 0) {
+					 1, NLM_F_MULTI, INVALID_UID) <= 0) {
 				skb_dst_drop(skb);
 				rcu_read_unlock_bh();
 				goto done;
